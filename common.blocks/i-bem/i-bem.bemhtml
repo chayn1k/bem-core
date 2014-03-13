@@ -2,13 +2,15 @@
 oninit(function(exports) {
 
 var BEM_ = {},
+    slice = Array.prototype.slice,
     toString = Object.prototype.toString,
     isArray = Array.isArray || function(obj) {
         return toString.call(obj) === '[object Array]';
     },
     SHORT_TAGS = { // хэш для быстрого определения, является ли тэг коротким
         area : 1, base : 1, br : 1, col : 1, command : 1, embed : 1, hr : 1, img : 1,
-        input : 1, keygen : 1, link : 1, meta : 1, param : 1, source : 1, wbr : 1 };
+        input : 1, keygen : 1, link : 1, meta : 1, param : 1, source : 1, wbr : 1
+    };
 
 /** @fileOverview - module for internal BEM helpers */
 /** @requires BEM */
@@ -38,19 +40,19 @@ var MOD_DELIM = '_',
 
 function buildModPostfix(modName, modVal) {
     var res = MOD_DELIM + modName;
-    if (modVal !== true) res += MOD_DELIM + modVal;
+    if(modVal !== true) res += MOD_DELIM + modVal;
     return res;
 }
 
 function buildBlockClass(name, modName, modVal) {
     var res = name;
-    if (modVal) res += buildModPostfix(modName, modVal);
+    if(modVal) res += buildModPostfix(modName, modVal);
     return res;
 }
 
 function buildElemClass(block, name, modName, modVal) {
     var res = buildBlockClass(block) + ELEM_DELIM + name;
-    if (modVal) res += buildModPostfix(modName, modVal);
+    if(modVal) res += buildModPostfix(modName, modVal);
     return res;
 }
 
@@ -91,7 +93,7 @@ BEM.INTERNAL = {
             return block;
         }
 
-        if (elem)
+        if(elem)
             return buildElemClass(block, elem, modName, modVal);
         else
             return buildBlockClass(block, modName, modVal);
@@ -106,7 +108,6 @@ BEM.INTERNAL = {
      * @returns {String} Class string
      */
     buildModsClasses : function(block, elem, mods) {
-
         var res = '';
 
         if(mods) {
@@ -125,7 +126,6 @@ BEM.INTERNAL = {
         }
 
         return res;
-
     },
 
     /**
@@ -137,10 +137,9 @@ BEM.INTERNAL = {
      * @returns {String} Class string
      */
     buildClasses : function(block, elem, mods) {
-
         var res = '';
 
-        if (elem)
+        if(elem)
             res += buildElemClass(block, elem);
         else
             res += buildBlockClass(block);
@@ -148,7 +147,6 @@ BEM.INTERNAL = {
         res += this.buildModsClasses(block, elem, mods);
 
         return res;
-
     }
 
 };
@@ -165,20 +163,20 @@ var buildEscape = (function() {
 })();
 
 function BEMContext(context, apply_) {
-    this.ctx = typeof context === null ? '' : context;
+    this.ctx = typeof context === null? '' : context;
     this.apply = apply_;
     this._str = '';
 
     // Compatibility stuff, just in case
-    var self = this;
+    var _this = this;
     this._buf = {
-      push: function() {
-        var chunks = Array.prototype.slice.call(arguments).join('');
-        self._str += chunks;
-      },
-      join: function() {
-        return this._str;
-      }
+        push : function() {
+            var chunks = slice.call(arguments).join('');
+            _this._str += chunks;
+        },
+        join : function() {
+            return this._str;
+        }
     };
     this._ = this;
 
@@ -280,7 +278,7 @@ match(this._mode === '')(
         });
     }),
 
-    match(function() { return this._.isArray(this.ctx); })(function() {
+    match(function() { return this.isArray(this.ctx); })(function() {
         var v = this.ctx,
             l = v.length,
             i = 0,
@@ -306,29 +304,29 @@ match(this._mode === '')(
         this._listLength--;
     }),
 
-    match(function() { return this._.isSimple(this.ctx); })(function() {
+    match(function() { return this.isSimple(this.ctx); })(function() {
         this._listLength--;
 
         var ctx = this.ctx;
-        if (ctx && ctx !== true || ctx === 0) {
-            this._buf.push(ctx + '');
+        if(ctx && ctx !== true || ctx === 0) {
+            this._str += ctx + '';
         }
     }),
 
     // hack-check for Vow-promise
     match(this.ctx && this.ctx._vow)(function() {
-        applyCtx(this.ctx._value);
+        apply({ ctx : this.ctx._value });
     })
 
 );
 
 def()(function() {
     var _this = this,
-        BEM_ = _this.BEM,
+        BEMInternal = _this.BEM.INTERNAL,
         v = this.ctx,
         isBEM,
         tag,
-        result;
+        res;
 
     local({ _str: '' })(function() {
         tag = apply('tag');
@@ -339,14 +337,14 @@ def()(function() {
             var jsParams, js;
             if(this.block && v.js !== false) {
                 js = apply('js');
-                js = js? this._.extend(v.js, js === true? {} : js) : v.js === true? {} : v.js;
-                js && ((jsParams = {})[BEM_.INTERNAL.buildClass(this.block, v.elem)] = js);
+                js = js? this.extend(v.js, js === true? {} : js) : v.js === true? {} : v.js;
+                js && ((jsParams = {})[BEMInternal.buildClass(this.block, v.elem)] = js);
             }
 
             this._str += '<' + tag;
 
             isBEM = apply('bem');
-            typeof isBEM !== 'undefined' || (isBEM = typeof v.bem !== 'undefined' ? v.bem : v.block || v.elem);
+            typeof isBEM !== 'undefined' || (isBEM = typeof v.bem !== 'undefined'? v.bem : v.block || v.elem);
 
             var cls = apply('cls');
             cls || (cls = v.cls);
@@ -355,57 +353,55 @@ def()(function() {
             if(isBEM || cls) {
                 this._str += ' class="';
                 if(isBEM) {
-
-                    this._str += BEM_.INTERNAL.buildClasses(this.block, v.elem, v.elemMods || v.mods);
+                    this._str += BEMInternal.buildClasses(this.block, v.elem, v.elemMods || v.mods);
 
                     var mix = apply('mix');
                     v.mix && (mix = mix? mix.concat(v.mix) : v.mix);
 
                     if(mix) {
                         var visited = {},
-                            visitedKey = function (block, elem) {
-                              return (block || '') + '__' + (elem || '');
+                            visitedKey = function(block, elem) {
+                                return (block || '') + '__' + (elem || '');
                             };
 
                         visited[visitedKey(this.block, this.elem)] = true;
 
                         // Transform mix to the single-item array if it's not array
-                        if (!this._.isArray(mix)) mix = [mix];
-                        for (var i = 0; i < mix.length; i++) {
+                        if(!this.isArray(mix)) mix = [mix];
+                        for(var i = 0; i < mix.length; i++) {
                             var mixItem = mix[i],
                                 hasItem = mixItem.block || mixItem.elem,
                                 block = mixItem.block || mixItem._block || _this.block,
                                 elem = mixItem.elem || mixItem._elem || _this.elem;
 
-                            if (hasItem) this._str += ' ';
-                            this._str += BEM_.INTERNAL[hasItem? 'buildClasses' : 'buildModsClasses'](
+                            if(hasItem) this._str += ' ';
+                            this._str += BEMInternal[hasItem? 'buildClasses' : 'buildModsClasses'](
                                 block,
                                 mixItem.elem || mixItem._elem ||
-                                    (mixItem.block ? undefined : _this.elem),
+                                    (mixItem.block? undefined : _this.elem),
                                 mixItem.elemMods || mixItem.mods);
 
                             if(mixItem.js) {
-                                (jsParams || (jsParams = {}))[BEM_.INTERNAL.buildClass(block, mixItem.elem)] = mixItem.js === true? {} : mixItem.js;
+                                (jsParams || (jsParams = {}))[BEMInternal.buildClass(block, mixItem.elem)] = mixItem.js === true?
+                                    {} :
+                                    mixItem.js;
                                 addJSInitClass || (addJSInitClass = block && !mixItem.elem);
                             }
 
                             // Process nested mixes
-                            if (hasItem && !visited[visitedKey(block, elem)]) {
+                            if(hasItem && !visited[visitedKey(block, elem)]) {
                                 visited[visitedKey(block, elem)] = true;
                                 var nestedMix = apply('mix', {
                                     block: block,
                                     elem: elem
                                 });
 
-                                if (nestedMix) {
-                                    for (var j = 0; j < nestedMix.length; j++) {
+                                if(nestedMix) {
+                                    for(var j = 0; j < nestedMix.length; j++) {
                                         var nestedItem = nestedMix[j];
-                                        if (!nestedItem.block &&
-                                            !nestedItem.elem ||
-                                            !visited[visitedKey(
-                                              nestedItem.block,
-                                              nestedItem.elem
-                                            )]) {
+                                        if(!nestedItem.block &&
+                                                !nestedItem.elem ||
+                                                !visited[visitedKey(nestedItem.block, nestedItem.elem)]) {
                                             nestedItem._block = block;
                                             nestedItem._elem = elem;
                                             mix.splice(i + 1, 0, nestedItem);
@@ -417,9 +413,9 @@ def()(function() {
                     }
                 }
 
-                if (cls) this._str += isBEM? ' ' + cls : cls;
+                if(cls) this._str += isBEM? ' ' + cls : cls;
 
-                if (addJSInitClass)
+                if(addJSInitClass)
                     this._str += ' i-bem"';
                 else
                     this._str += '"';
@@ -427,19 +423,19 @@ def()(function() {
 
             if(isBEM && jsParams) {
                 this._str += ' data-bem="' +
-                    this._.attrEscape(JSON.stringify(jsParams)) +
+                    this.attrEscape(JSON.stringify(jsParams)) +
                     '"';
             }
 
             var attrs = apply('attrs');
-            attrs = this._.extend(attrs, v.attrs); // NOTE: возможно стоит делать массив, чтобы потом быстрее сериализовывать
+            attrs = this.extend(attrs, v.attrs); // NOTE: возможно стоит делать массив, чтобы потом быстрее сериализовывать
             if(attrs) {
                 var name, attr; // TODO: разобраться с OmetaJS и YUI Compressor
                 for(name in attrs) {
                     attr = attrs[name];
-                    if(attr === undefined) continue;
+                    if(typeof attr === 'undefined') continue;
                     this._str += ' ' + name + '="' +
-                        this._.attrEscape(this._.isSimple(attr)?
+                        this.attrEscape(this.isSimple(attr)?
                             attr :
                             this.reapply(attr)) +
                         '"';
@@ -447,7 +443,7 @@ def()(function() {
             }
         }
 
-        if(this._.isShortTag(tag)) {
+        if(this.isShortTag(tag)) {
             this._str += '/>';
         } else {
             if(tag) this._str += '>';
@@ -456,21 +452,21 @@ def()(function() {
             if(content || content === 0) {
                 isBEM = this.block || this.elem;
                 apply('', {
-                    _notNewList: false,
-                    position: isBEM ? 1 : this.position,
-                    _listLength: isBEM ? 1 : this._listLength,
-                    ctx: content
+                    _notNewList : false,
+                    position : isBEM? 1 : this.position,
+                    _listLength : isBEM? 1 : this._listLength,
+                    ctx : content
                 });
             }
 
-            if (tag) this._str += '</' + tag + '>';
+            if(tag) this._str += '</' + tag + '>';
         }
 
         // If the buffer was replaced, pretend that we're pushing to the buffer
-        result = this._str;
+        res = this._str;
     });
 
-    this._buf.push(result);
+    this._buf.push(res);
 });
 
 tag()(undefined);
